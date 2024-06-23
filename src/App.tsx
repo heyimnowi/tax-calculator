@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-
-import "./App.scss";
 import { fetchTaxRates } from "./apis/taxCalculatorApi";
 import {
   MAX_TAX_YEAR,
@@ -8,12 +6,16 @@ import {
   calculateEffectiveRate,
   calculateTotalTax,
 } from "./utils/taxCalculator";
+import { ClipLoader } from "react-spinners";
+
+import "./App.scss";
 
 const App: React.FC = () => {
   const [annualIncome, setAnnualIncome] = useState<number>(0);
   const [taxYear, setTaxYear] = useState<number>(MAX_TAX_YEAR);
   const [result, setResult] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   const validateInputs = (): boolean => {
     if (isNaN(annualIncome) || annualIncome <= 0) {
@@ -33,23 +35,37 @@ const App: React.FC = () => {
 
   const handleCalculateTax = async (event: React.FormEvent) => {
     event.preventDefault();
-    setResult('');
-    setError('');
+    setResult("");
+    setError("");
+    setLoading(true);
 
-    if (!validateInputs()) return;
+    if (!validateInputs()) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const taxResponse = await fetchTaxRates(taxYear);
-      const { totalTax, taxDetails } = calculateTotalTax(annualIncome, taxResponse.tax_brackets);
+      const { totalTax, taxDetails } = calculateTotalTax(
+        annualIncome,
+        taxResponse.tax_brackets
+      );
       const effectiveRate = calculateEffectiveRate(totalTax, annualIncome);
 
-      setResult(`Total tax: $${totalTax.toFixed(2)}\n${taxDetails}Effective tax rate: ${effectiveRate.toFixed(2)}%`);
+      setResult(
+        `Total tax: $${totalTax.toFixed(
+          2
+        )}\n${taxDetails}Effective tax rate: ${effectiveRate.toFixed(2)}%`
+      );
     } catch (err) {
       if (err instanceof Error) {
+        console.log('here')
         setError(err.message);
       } else {
-        setError('An unknown error occurred.');
+        setError("An unknown error occurred.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,8 +105,8 @@ const App: React.FC = () => {
             ))}
           </select>
         </div>
-        <button className="form-submit" type="submit">
-          Calculate Tax
+        <button className="form-submit" type="submit" disabled={loading}>
+          {loading ? <ClipLoader size={10} color={"#1C1678"} /> : "Calculate Tax"}
         </button>
       </form>
       {error && <p className="error">{error}</p>}
