@@ -3,12 +3,24 @@ import { TaxBracket } from "../apis/taxCalculatorApiModel";
 export const MIN_TAX_YEAR = 2019;
 export const MAX_TAX_YEAR = 2022;
 
+export interface TaxDetail {
+  range: string;
+  rate: number;
+  taxAmount: number;
+}
+
+export interface TaxCalculationResult {
+  totalTax: number;
+  effectiveRate: number;
+  taxDetails: TaxDetail[];
+}
+
 export const calculateTotalTax = (
   annualIncome: number,
   taxBrackets: TaxBracket[]
-): { totalTax: number; taxDetails: string } => {
+): { totalTax: number; taxDetails: TaxDetail[] } => {
   let totalTax = 0;
-  let taxDetails = "";
+  let taxDetails: TaxDetail[] = [];
 
   for (const bracket of taxBrackets) {
     if (annualIncome > bracket.min) {
@@ -17,11 +29,14 @@ export const calculateTotalTax = (
         : annualIncome - bracket.min;
       const taxForBracket = taxableIncome * bracket.rate;
       totalTax += taxForBracket;
-      taxDetails += `Income between $${bracket.min.toFixed(2)} and $${
-        bracket.max ? bracket.max.toFixed(2) : "above"
-      } taxed at ${(bracket.rate * 100).toFixed(2)}%: $${taxForBracket.toFixed(
-        2
-      )}\n`;
+
+      taxDetails.push({
+        range: `$${bracket.min.toFixed(2)} - ${
+          bracket.max ? `$${bracket.max.toFixed(2)}` : "above"
+        }`,
+        rate: bracket.rate * 100,
+        taxAmount: taxForBracket,
+      });
     }
   }
 
